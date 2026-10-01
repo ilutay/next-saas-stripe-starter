@@ -13,7 +13,7 @@
 | auth schema | `pnpm auth:generate` (rewrites `lib/db/schema/auth.ts`; never hand-edit it) | — |
 | seed / test | none exist | — |
 
-**DB var:** `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPOOLED` (migrations). It is **unset** in `.env` and points at Neon in prod. A local Postgres 15 is up on `/tmp:5432`, but the Neon Pool driver needs a WebSocket proxy to reach it. See Blockers.
+**DB var:** `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPOOLED` (migrations). Both are set in `.env` and point at Neon project `bold-lab-08594161`, branch `production`, which every worktree shares. This is not local Postgres. The shell exports both as empty strings, so prefix every command with `env -u …`.
 
 ## Module system (read AGENTS.md)
 - Each module is defined in `config/features.ts` with `defineFeatures({ key: { default, dependsOn, requires, files, routes, packages } })` and wrapped in `// module:x start/end` markers for `pnpm modules:prune`.
@@ -26,7 +26,7 @@
 ## Data model (`lib/db/schema/`)
 - `auth.ts` is generated and holds `user`, `session` (`activeOrganizationId`), `account`, `verification`, `organization`, `team`, `teamMember`, `member` (`organizationId`, `userId`, `role`), `invitation` and `subscription`.
 - `subscription` (auth.ts:179) has `plan` (`"pro" | "business"`), **`referenceId` = organization id**, `status` (default `incomplete`), `stripeCustomerId`, `periodStart`/`periodEnd`, `cancelAtPeriodEnd` and `seats`.
-- `index.ts` re-exports every schema file. Rule: **every business table carries a non-null `organizationId`**. No app tables exist yet. There is one migration, `drizzle/0000_lush_cyclops.sql`.
+- `index.ts` re-exports every schema file. Rule: **every business table carries a non-null `organizationId`**. No app tables exist on main yet; `ask_query` comes from slice a. There is one migration, `drizzle/0000_lush_cyclops.sql`.
 - **Tenancy:** `organizationId` column, with the active org taken from `session.session.activeOrganizationId`.
 - **Access level:** `subscription.plan` per org. Platform admins (`user.role`, checked with `isPlatformAdmin`) count as `business` (`modules/billing/plans.ts` `adminPlan`).
 
@@ -50,10 +50,10 @@
 ## External services
 | Service | Adapter | Key present | Fixture mode |
 |---|---|---|---|
-| Postgres (Neon) | `lib/db/index.ts` | no | — (blocker) |
-| Better Auth / Google OAuth | `lib/auth/server.ts`, `lib/auth/client` | unknown/no | sign-in is **Google only** (magic link is Pro) |
+| Postgres (Neon) | `lib/db/index.ts` | yes (`.env`) | — |
+| Better Auth / Google OAuth | `lib/auth/server.ts`, `lib/auth/client` | yes | sign-in is **Google only** (magic link is Pro) |
 | Stripe | `lib/stripe.ts`, `modules/billing/*` | no, billing module off | none; plan gate must read the `subscription` table directly |
-| LLM | none yet | — | build `lib/ask/` with `AI_FIXTURES=1` |
+| LLM | `modules/ask/engine/` (slice a) | no `ANTHROPIC_API_KEY` | fixture engine when `AI_FIXTURES=1` or no key; `llm.ts` is a Should item (via `fetch`, no new dependency) |
 
 ## Conventions
 - **Files:** kebab-case. Server logic goes in `modules/<module>/*.ts`, route UI in `app/(app)/dashboard/<x>/page.tsx`, and feature components in `components/<module>/`.
@@ -70,24 +70,19 @@
 4. `lib/content/docs.ts` + `blog.ts`: corpus enumeration and citation URLs.
 5. `config/features.ts` + `config/nav.ts`: register an `ask` module (dependsOn `auth`) and its sidebar item.
 
-## Where the feature goes
-- **Module:** add `ask` in `config/features.ts` with `dependsOn: ["auth"]` and `files: ["app/(app)/dashboard/ask", "components/ask", "modules/ask", "lib/db/schema/ask.ts"]`.
-- **Table:** `lib/db/schema/ask.ts` defines `askQuery` with `id`, `organizationId` (non-null, indexed), `userId`, `question`, `answer`, `citations` (jsonb `{title,url}[]`), `plan` and `createdAt`. Export it from `index.ts`, then run `pnpm db:generate`.
-- **Adapter:** `modules/ask/engine.ts` exposes one interface, `answer(question, corpus)`, which returns `{ answer, citations }`.
-  - `AI_FIXTURES=1` or no key: keyword retrieval plus a templated answer with deterministic citations.
-  - Otherwise: an LLM call over the top-k chunks.
-- **Corpus:** `modules/ask/corpus.ts` reads `getPages()` from both sources, joins them with the raw MDX from fs, and chunks by heading.
-- **Gate:** `modules/ask/plan.ts` `getOrgPlan(orgId)` reads `subscription` where `referenceId = orgId` and `status in (active, trialing)`, with platform admins counting as business.
-- **Action:** `modules/ask/actions.ts` `askQuestion(input)` runs `assertFeature("ask")`, then zod, then `getActiveOrganization()` (the session re-check), then the plan gate, then the engine, then inserts into `askQuery` scoped by org.
-- **Page:** `app/(app)/dashboard/ask/page.tsx` (server) contains the ask box, an upgrade prompt on free plans, and history from `askQuery where organizationId = org.id order by createdAt desc`. Client parts go in `components/ask/`.
+## Where the feature goes (state at T+32; BRIEF.md is the contract)
+- **Done on main (3aa2a0d):** the `ask` module is in `config/features.ts:58`, the nav item and icon exist, and `modules/ask/contracts.ts` holds the shared types. `modules/ask/actions.ts` (`askQuestion`) and `queries.ts` (`loadAskPage`) are **stubs** that return free/`upgrade_required`.
+- **Slice a** (`feat/a`): `lib/db/schema/ask.ts` `askQuery`, plus migration `0001`, `modules/ask/{plan,corpus}.ts`, `engine/{index,fixture,llm}.ts`, and the real bodies of the action and loader. It is the only slice that migrates.
+- **Slice b** (`feat/b`): `app/(app)/dashboard/ask/{layout,page}.tsx`, `components/ask/*`, and `components/ui/textarea.tsx`. Until b merges, `/dashboard/ask` returns **404 on main**, which is expected.
+- **Slice c** (`feat/c`): `scripts/ask/{seed-plan.ts,questions.json,smoke.ts}` and the README `## Ask your docs` section.
+- **Merge order:** a, then b, then c. `corpus.ts` and `engine/**` use relative imports only, so `node scripts/ask/smoke.ts` runs them directly.
 
 ## Blockers / gotchas
 - **Auth is live:** Google sign-in works locally. The hosted Better Auth dashboard is connected through `dash()` from `@better-auth/infra` and needs `BETTER_AUTH_API_KEY` in `.env`. It reaches the app through an ngrok tunnel to :3000, and the free ngrok URL changes on every restart.
-- **The shell holds a stale, mostly empty copy of every `.env` key** (`DATABASE_URL`, `BETTER_AUTH_SECRET`, …). `@next/env` never overrides an existing var, so start the dev server with the command above, which unsets them all. `@next/env` never overrides an existing var, so `.env` is ignored. Prefix commands, and the dev server, with `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED`.
+- **The shell holds a stale, mostly empty copy of every `.env` key** (`DATABASE_URL`, `BETTER_AUTH_SECRET`, …). `@next/env` never overrides an existing var, so start the dev server with the command above, which unsets them all. Prefix commands, and the dev server, with `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED`.
 - **Neon:** linked to project `bold-lab-08594161`, branch `production` (`.neon`, `neon.ts`). Self-managed Better Auth is kept; Neon Managed Auth is not used.
-- ~~No database~~ (fixed: Neon linked). Previously `DATABASE_URL` was unset, so the auth module is off, and `/dashboard`, `/login` and `/pricing` return 404.
-  - Neon's Pool driver can't reach plain local Postgres without a wsproxy. Fixes: use a Neon branch URL, or run local Postgres plus `ghcr.io/timowilhelm/local-neon-http-proxy` with `neonConfig` overrides. Either is a decision for the user.
+- **Fixed: no database.** Neon is linked. If `/dashboard` returns 404, the stale shell env is hiding `.env` again.
 - **Sign-in is Google only.** A local demo needs Google OAuth creds, or a dev-only session seeding path.
 - **Stripe is unset,** so billing is off. The plan gate must read the `subscription` table directly, and the demo needs a seeded `subscription` row (`plan='pro', status='active', referenceId=<orgId>`).
 - `next dev` re-writes the `nextjs-agent-rules` block in `AGENTS.md`. Commit it rather than fight it.
-- The orientation session was denied reading `.env` values. Only `sprint-start`'s note that `DATABASE_URL` is unset is known.
+- **Shared Neon `production` DB:** every worktree points at it. Only slice a's additive migration touches it. Roll back with Neon branch restore.
