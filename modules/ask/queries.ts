@@ -1,17 +1,35 @@
 import "server-only"
 
-import { getActiveOrganization } from "@/lib/auth/session"
-import type { AskPageData } from "@/modules/ask/contracts"
+import { desc, eq } from "drizzle-orm"
 
-// STUB committed by main so slice b can build against the final signature.
-// Slice a owns this file and replaces the body with the real plan lookup and
-// the organization's history (ask_query where organization_id = active org).
+import { getActiveOrganization } from "@/lib/auth/session"
+import { db } from "@/lib/db"
+import { askQuery, user } from "@/lib/db/schema"
+import type { AskPageData } from "@/modules/ask/contracts"
+import { getAskEngine } from "@/modules/ask/engine"
+import { toHistoryItem } from "@/modules/ask/history"
+import { getAskAccess } from "@/modules/ask/plan"
+
+const HISTORY_LIMIT = 20
+
 export async function loadAskPage(): Promise<AskPageData> {
-  const { organization } = await getActiveOrganization()
+  const { session, organization } = await getActiveOrganization()
+
+  const [access, rows] = await Promise.all([
+    getAskAccess(organization.id, session.user.role),
+    db
+      .select({ row: askQuery, askedByName: user.name })
+      .from(askQuery)
+      .leftJoin(user, eq(user.id, askQuery.userId))
+      .where(eq(askQuery.organizationId, organization.id))
+      .orderBy(desc(askQuery.createdAt))
+      .limit(HISTORY_LIMIT),
+  ])
+
   return {
     organizationName: organization.name,
-    access: { plan: "free", canAnswer: false },
-    engineMode: "fixture",
-    history: [],
+    access,
+    engineMode: getAskEngine().mode,
+    history: rows.map((r) => toHistoryItem(r.row, r.askedByName)),
   }
 }
