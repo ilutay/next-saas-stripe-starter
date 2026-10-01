@@ -7,7 +7,7 @@ Read `ARCHITECTURE-MAP.md` first.
 - Use pnpm only (`pnpm-lock.yaml`).
 - Dev server: `PORT=3000 ./node_modules/.bin/next dev -p 3000`. It already runs in tmux window `dev`.
 - Before calling anything done, run `pnpm exec next typegen && pnpm typecheck`, then curl the page you touched.
-- Database: change `lib/db/schema/*.ts`, then run `pnpm db:generate && pnpm db:migrate`. Never hand-edit `lib/db/schema/auth.ts`; regenerate it with `pnpm auth:generate`.
+- Database (Neon, linked via `.neon`): change `lib/db/schema/*.ts`, then run `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED pnpm db:generate && env -u DATABASE_URL -u DATABASE_URL_UNPOOLED pnpm db:migrate`. The shell exports these as empty strings, which hides `.env`. Never hand-edit `lib/db/schema/auth.ts`; regenerate it with `pnpm auth:generate`.
 - There is no test runner and no seed script.
 
 ## Rules
