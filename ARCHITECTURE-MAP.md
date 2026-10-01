@@ -6,7 +6,7 @@
 | What | Command | Status |
 |---|---|---|
 | install | `pnpm install --prefer-offline` | done by sprint-start |
-| dev | `env $(grep -oE "^[A-Za-z_]+=" .env | tr -d = | sed "s/^/-u /") PORT=3000 ./node_modules/.bin/next dev -p 3000` (tmux `sprint-test:dev`) | running, `/` `/docs` `/blog` 200 |
+| dev | `env $(grep -oE "^[A-Za-z_]+=" .env \| tr -d = \| sed "s/^/-u /") PORT=3000 ./node_modules/.bin/next dev -p 3000` (tmux `sprint-test:dev`) | running, `/` `/docs` `/blog` 200 |
 | typecheck | `pnpm exec next typegen && pnpm typecheck` | passes (exit 0) |
 | migrate | `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED pnpm db:migrate` | 0000 applied to Neon `production` |
 | generate migration | `pnpm db:generate` | — |
