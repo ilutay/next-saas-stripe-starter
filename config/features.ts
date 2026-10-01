@@ -55,6 +55,22 @@ export const features = defineFeatures({
     ],
     routes: ["/pricing", "/dashboard/billing", "/dashboard/billing/invoices"],
   },
+  // module:ask start
+  ask: {
+    label: "Ask",
+    description: "Answers from your own docs and blog, with citations.",
+    default: true,
+    dependsOn: ["auth"],
+    files: [
+      "app/(app)/dashboard/ask",
+      "components/ask",
+      "modules/ask",
+      "lib/db/schema/ask.ts",
+      "scripts/ask",
+    ],
+    routes: ["/dashboard/ask"],
+  },
+  // module:ask end
   // module:admin start
   admin: {
     label: "Admin panel",

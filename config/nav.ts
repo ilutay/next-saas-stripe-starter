@@ -10,6 +10,7 @@ export type NavIcon =
   | "settings"
   | "admin"
   | "sentry"
+  | "ask" // module:ask
 
 export type NavItem = {
   title: string
@@ -42,6 +43,9 @@ export const dashboardNav: NavSection[] = [
   {
     items: [
       { title: "Overview", href: "/dashboard", icon: "dashboard" },
+      // module:ask start
+      { title: "Ask", href: "/dashboard/ask", icon: "ask", feature: "ask" },
+      // module:ask end
       {
         title: "Onboarding",
         href: "/dashboard/onboarding",
