@@ -1,6 +1,7 @@
 // No `import "server-only"` here: the Better Auth CLI loads this file to
 // generate the schema and cannot resolve it. Server-only guards live in
 // lib/auth/session.ts and lib/db consumers instead.
+import { dash } from "@better-auth/infra"
 import { stripe } from "@better-auth/stripe"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
@@ -123,6 +124,8 @@ export const auth = betterAuth({
 
   plugins: [
     admin(),
+    // Hosted dashboard at dash.better-auth.com; reads BETTER_AUTH_API_KEY.
+    dash(),
     // Reuses the Google client ID above; only the prompt lives client-side.
     oneTap(),
     organization({
