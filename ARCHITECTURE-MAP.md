@@ -6,7 +6,7 @@
 | What | Command | Status |
 |---|---|---|
 | install | `pnpm install --prefer-offline` | done by sprint-start |
-| dev | `PORT=3000 ./node_modules/.bin/next dev -p 3000` (tmux `sprint-test:dev`) | running, `/` `/docs` `/blog` 200 |
+| dev | `env $(grep -oE "^[A-Za-z_]+=" .env | tr -d = | sed "s/^/-u /") PORT=3000 ./node_modules/.bin/next dev -p 3000` (tmux `sprint-test:dev`) | running, `/` `/docs` `/blog` 200 |
 | typecheck | `pnpm exec next typegen && pnpm typecheck` | passes (exit 0) |
 | migrate | `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED pnpm db:migrate` | 0000 applied to Neon `production` |
 | generate migration | `pnpm db:generate` | — |
@@ -82,7 +82,8 @@
 - **Page:** `app/(app)/dashboard/ask/page.tsx` (server) contains the ask box, an upgrade prompt on free plans, and history from `askQuery where organizationId = org.id order by createdAt desc`. Client parts go in `components/ask/`.
 
 ## Blockers / gotchas
-- **The shell exports `DATABASE_URL`/`DATABASE_URL_UNPOOLED` as empty strings.** `@next/env` never overrides an existing var, so `.env` is ignored. Prefix commands, and the dev server, with `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED`.
+- **Auth is live:** Google sign-in works locally. The hosted Better Auth dashboard is connected through `dash()` from `@better-auth/infra` and needs `BETTER_AUTH_API_KEY` in `.env`. It reaches the app through an ngrok tunnel to :3000, and the free ngrok URL changes on every restart.
+- **The shell holds a stale, mostly empty copy of every `.env` key** (`DATABASE_URL`, `BETTER_AUTH_SECRET`, …). `@next/env` never overrides an existing var, so start the dev server with the command above, which unsets them all. `@next/env` never overrides an existing var, so `.env` is ignored. Prefix commands, and the dev server, with `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED`.
 - **Neon:** linked to project `bold-lab-08594161`, branch `production` (`.neon`, `neon.ts`). Self-managed Better Auth is kept; Neon Managed Auth is not used.
 - ~~No database~~ (fixed: Neon linked). Previously `DATABASE_URL` was unset, so the auth module is off, and `/dashboard`, `/login` and `/pricing` return 404.
   - Neon's Pool driver can't reach plain local Postgres without a wsproxy. Fixes: use a Neon branch URL, or run local Postgres plus `ghcr.io/timowilhelm/local-neon-http-proxy` with `neonConfig` overrides. Either is a decision for the user.
