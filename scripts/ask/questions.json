@@ -1,0 +1,54 @@
+[
+  {
+    "question": "How do I set up the Stripe webhook?",
+    "expectUrl": "/docs/stripe"
+  },
+  {
+    "question": "Which redirect URI do I add for Google OAuth?",
+    "expectUrl": "/docs/google-oauth"
+  },
+  {
+    "question": "How do I permanently delete the code for modules I don't use?",
+    "expectUrl": "/blog/feature-flags-you-can-prune"
+  },
+  {
+    "question": "How do I deploy the starter on Vercel?",
+    "expectUrl": "/docs/deployment"
+  },
+  {
+    "question": "Why did you pick Drizzle and Neon for the database?",
+    "expectUrl": "/blog/why-drizzle-and-neon"
+  },
+  {
+    "question": "How do organizations, roles and invitations work?",
+    "expectUrl": "/blog/organizations-and-roles"
+  },
+  {
+    "question": "How do I run the app locally after cloning it?",
+    "expectUrl": "/docs/installation"
+  },
+  {
+    "question": "How do I switch the billing module off?",
+    "expectUrl": "/docs/modules"
+  },
+  {
+    "question": "How do I turn on magic link email sign-in?",
+    "expectUrl": "/docs/authentication"
+  },
+  {
+    "question": "What do I get with SaaS Starter Pro?",
+    "expectUrl": "/blog/saas-starter-pro"
+  },
+  {
+    "question": "What's the capital of France?",
+    "expectGrounded": false
+  },
+  {
+    "question": "Can you recommend a good lasagna recipe?",
+    "expectGrounded": false
+  },
+  {
+    "question": "Who won the football World Cup in 2018?",
+    "expectGrounded": false
+  }
+]
