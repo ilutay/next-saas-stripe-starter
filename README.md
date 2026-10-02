@@ -125,10 +125,10 @@ env -u DATABASE_URL -u DATABASE_URL_UNPOOLED node scripts/ask/seed-plan.ts <emai
 `scripts/ask/questions.json` holds 10 questions, each paired with the page that covers it, and 3 off-topic questions. `node scripts/ask/smoke.ts` runs them all through the fixture engine and exits non-zero when fewer than 8 cite the right page or when any off-topic question gets an answer:
 
 ```
-engine=fixture  grounded _/10, correct citation _/10, off-topic refused _/3  (slowest _ ms)
+engine=fixture  grounded 8/10, correct citation 8/10, off-topic refused 3/3  (slowest 8 ms)
 ```
 
-<!-- TODO(c): replace with the real line after rebasing on slice a's engine. -->
+Build notes, decisions, cuts and known gaps are in [SUBMISSION.md](SUBMISSION.md).
 
 ### What's next
 
