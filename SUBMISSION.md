@@ -47,6 +47,7 @@ AI_FIXTURES=1 pnpm dev
 - **Benchmark sits exactly at the threshold (8/10):** one regression fails it.
 - **Copy with billing off:** the upgrade prompt says "Ask an owner to upgrade" even to an owner.
 - **Mobile not visually checked:** the layout has `max-sm:` breakpoints, but the 390 px screenshot wasn't captured.
+- **Build warning:** `modules/ask/corpus.ts` reads `content/` with computed `fs` paths, so Turbopack traces the whole project into the server bundle. The build passes, but before deploying, scope the paths (`path.join(process.cwd(), "content", "docs")`) or precompute the corpus at build time.
 - `BETTER_AUTH_SECRET` in the local `.env` is short and low-entropy (Better Auth warns at boot). Generate a real one for any deploy.
 
 ### What's next (ranked)
