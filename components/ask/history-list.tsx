@@ -29,7 +29,13 @@ function relativeTime(iso: string) {
   return "just now"
 }
 
-export function HistoryList({ history }: { history: AskHistoryItem[] }) {
+export function HistoryList({
+  history,
+  canAnswer,
+}: {
+  history: AskHistoryItem[]
+  canAnswer: boolean
+}) {
   const [openId, setOpenId] = useState<string | null>(null)
 
   return (
@@ -66,7 +72,13 @@ export function HistoryList({ history }: { history: AskHistoryItem[] }) {
                       </time>
                     </p>
                   </div>
-                  {gated ? (
+                  {gated && canAnswer ? (
+                    // Asked before the upgrade: no answer was stored, so
+                    // pointing at the upgrade would be wrong now.
+                    <Badge variant="outline" className="mt-0.5">
+                      Asked on Free
+                    </Badge>
+                  ) : gated ? (
                     <Badge variant="secondary" className="mt-0.5">
                       <Lock />
                       <span className="max-sm:hidden">
