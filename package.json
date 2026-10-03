@@ -19,7 +19,10 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@better-auth/infra": "^0.4.13",
     "@better-auth/stripe": "^1.7.5",
+    "@neon/config": "^1.8.3",
+    "@neon/env": "^1.4.8",
     "@neondatabase/serverless": "^1.1.0",
     "better-auth": "^1.7.5",
     "class-variance-authority": "^0.7.1",

@@ -5,3 +5,5 @@
 // - other files → app tables. Every business table carries a non-null `organizationId`.
 
 export * from "./auth"
+
+export * from "./ask" // module:ask

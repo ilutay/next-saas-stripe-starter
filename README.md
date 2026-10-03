@@ -90,6 +90,54 @@ drizzle/        Migrations
 
 Titles, descriptions, canonical URLs and social cards come from `lib/metadata.ts`; the site-wide card is generated in `app/opengraph-image.tsx`. `app/sitemap.ts` lists the public pages of the enabled modules, and `app/robots.ts` keeps the dashboard and API out of search results. Set `NEXT_PUBLIC_APP_URL` to your domain so every absolute URL is right.
 
+<!-- module:ask start -->
+## Ask your docs
+
+`/dashboard/ask` lets a member of an organization ask a plain-language question and get an answer grounded only in the published docs and blog (`content/docs`, `content/blog`), with numbered citations that link to the exact page and section. A question the content doesn't cover gets "Your docs and blog don't cover this." and no citations; the engine never answers from outside the corpus. Every question is kept in the organization's history (the last 20, newest first), and switching organization shows only that organization's questions.
+
+**Plan gate.** Answers are a paid feature. The plan is read from the `subscription` row where `reference_id` is the organization id and `status` is `active` or `trialing`; platform admins count as `business`. A free organization still sees the ask box, but the server action returns an upgrade prompt instead of an answer and stores the question as gated ("upgrade to see the answer"). The check happens in the action, not only in the UI.
+
+**Fixture mode.** With `AI_FIXTURES=1`, or with no `ANTHROPIC_API_KEY`, the engine (`modules/ask/engine/`) uses keyword retrieval over the MDX and an extractive answer: no keys, no network, deterministic output. The page shows a "Fixture engine" badge, and the server logs `[ask] engine=fixture` once.
+
+**Switching plans without Stripe.** Billing is off locally, so flip an organization's plan by writing its `subscription` row:
+
+```bash
+env -u DATABASE_URL -u DATABASE_URL_UNPOOLED node scripts/ask/seed-plan.ts <email> <free|pro|business> [--org <slug>]
+# org Acme (Pksm…) -> pro
+```
+
+`pro` and `business` replace the organization's subscription rows with one active row valid for 30 days; `free` deletes them. `--org` is needed only when the user belongs to several organizations. The `env -u` is there because a shell that exports an empty `DATABASE_URL` hides `.env`.
+
+### Demo (about 3 minutes)
+
+1. Open `/login` and choose **Continue with Google**. Sign-up creates the user and a personal organization.
+2. Click **Ask** in the sidebar. `/dashboard/ask` shows a **Free** badge and the ask box.
+3. Ask *"How do I set up the Stripe webhook?"*. You get an upgrade prompt, and the question appears in history as gated.
+4. Upgrade the organization: `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED node scripts/ask/seed-plan.ts <your-google-email> pro`.
+5. Reload. The badge shows **Pro**. Ask the same question: the answer cites `/docs/stripe#…` and `/blog/stripe-billing-from-checkout-to-webhooks`.
+6. Click a citation. You land on that page and section.
+7. Ask *"What's the capital of France?"*. You get "Your docs and blog don't cover this." with no citations.
+8. In a private window, sign in with a second Google account. It gets its own organization: empty history and a **Free** badge.
+9. Run `node scripts/ask/smoke.ts` (below).
+
+### Benchmark
+
+`scripts/ask/questions.json` holds 10 questions, each paired with the page that covers it, and 3 off-topic questions. `node scripts/ask/smoke.ts` runs them all through the fixture engine and exits non-zero when fewer than 8 cite the right page or when any off-topic question gets an answer:
+
+```
+engine=fixture  grounded 8/10, correct citation 8/10, off-topic refused 3/3  (slowest 8 ms)
+```
+
+Build notes, decisions, cuts and known gaps are in [SUBMISSION.md](SUBMISSION.md).
+
+### What's next
+
+- Streaming answers.
+- Per-organization content: tag MDX with an `organizationId` once organizations can publish their own pages. Today every organization shares the starter's content.
+- Feedback on answers (helpful or not), and a usage count next to the plan.
+- Embedding retrieval (pgvector on Neon) in place of keyword scoring.
+<!-- module:ask end -->
+
 ## Pro version
 
 A paid version adds what comes after launch — onboarding, transactional emails, team management and seat-based billing — on the same foundation. It isn't part of this repository; every "About Pro" link in the app points back to this section.

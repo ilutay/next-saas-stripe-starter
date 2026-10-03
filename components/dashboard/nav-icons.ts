@@ -4,6 +4,7 @@ import {
   CreditCard,
   LayoutGrid,
   Mail,
+  MessageCircleQuestion, // module:ask
   MailOpen,
   Rocket,
   Settings,
@@ -23,4 +24,5 @@ export const navIcons: Record<NavIcon, LucideIcon> = {
   settings: Settings,
   admin: ShieldCheck,
   sentry: Bug,
+  ask: MessageCircleQuestion, // module:ask
 }

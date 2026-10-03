@@ -1,3 +1,4 @@
+import { dashClient } from "@better-auth/infra/client"
 import { stripeClient } from "@better-auth/stripe/client"
 import {
   adminClient,
@@ -13,6 +14,7 @@ export const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""
 export const authClient = createAuthClient({
   plugins: [
     adminClient(),
+    dashClient(),
     oneTapClient({ clientId: googleClientId, autoSelect: false }),
     organizationClient({ teams: { enabled: true } }),
     stripeClient({ subscription: true }),
